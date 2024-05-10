@@ -160,7 +160,7 @@ def train_step(model, train_dataset, epoch, device):
                 model.relation_embeddings.weight.norm(p = 2)
             )
 
-            loss = multiclass_NLL(fact_score, head_prediction_score) + multiclass_NLL(fact_score, tail_prediction_score) + regularization
+            loss = (multiclass_NLL(fact_score, head_prediction_score) + multiclass_NLL(fact_score, tail_prediction_score)) / batch_size + regularization
 
             loss.backward()
 

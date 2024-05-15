@@ -18,6 +18,21 @@ negative_samples_per_fact = 2
 embedding_dimension = 5
 epoch = 1
 
+def parse_args(args=None):
+    parser = argparse.ArgumentParser(
+        description='Training and Testing Knowledge Graph Embedding Models',
+        usage='train.py [<args>] [-h | --help]'
+    
+    parser.add_argument('-n', '--negative_sample_size', default=128, type=int)
+    parser.add_argument('-d', '--embedding_dim', default=500, type=int)
+    parser.add_argument('-g', '--gamma', default=12.0, type=float)
+    parser.add_argument('-b', '--batch_size', default=1024, type=int)
+    parser.add_argument('--test_batch_size', default=4, type=int, help='valid/test batch size')
+    
+    parser.add_argument('-lr', '--learning_rate', default=0.0001, type=float)
+
+    return parser.parse_args(args)
+
 def collate_fn_train(data):
     """
     rewrite collate_fn structure because we use dictionary when returning items
@@ -113,7 +128,6 @@ def process_data(data_path):
     else:
         numEntity, numRelation, entity_dict, relation_dict = extract_element(data_path)
     
-    #[TODO: ] change train file back to normal
     train_file_path = os.path.join(data_path, "train.txt")
     test_file_path = os.path.join(data_path, "test.txt")
     valid_file_path = os.path.join(data_path, "valid.txt")
@@ -127,7 +141,7 @@ def process_data(data_path):
         TrainDataset(train_triples, numEntity, negative_sample_size=negative_samples_per_fact),
         shuffle=True,
         collate_fn=collate_fn_train,
-        batch_size=500
+        batch_size= (len(train_triples) // batch_count) + 1
     )
 
     test_dataset = DataLoader(
@@ -137,7 +151,7 @@ def process_data(data_path):
         batch_size=2
     )
 
-    return train_dataset, test_dataset, numEntity, numRelation
+    return train_dataset, test_dataset, numEntity, numRelation, len(all_triples)
 
 def multiclass_NLL(fact_score, negative_score):
     return (-fact_score + torch.log((torch.exp(negative_score).sum()))).sum()
@@ -263,7 +277,7 @@ def test_step(model, test_dataset, device):
 
 
 if __name__ == "__main__":
-    train_dataset, test_dataset, numEntity, numRelation = process_data(data_path=os.path.join(os.getcwd(), "data"))
+    train_dataset, test_dataset, numEntity, numRelation, numSamples = process_data(data_path=os.path.join(os.getcwd(), "data"))
 
     if torch.cuda.is_available():
         print("CUDA available, training on GPU ...")
@@ -275,5 +289,7 @@ if __name__ == "__main__":
     model = DistMult(numEntity, numRelation, embedding_dimension)
     model.to(device)
 
-    # train_step(model, train_dataset, 50, device)
+    args = parse_args(args)
+
+    train_step(model, train_dataset, 50, device)
     test_step(model, test_dataset, device)

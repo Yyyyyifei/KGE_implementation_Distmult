@@ -122,7 +122,6 @@ class TestDataset(Dataset):
         # filter all true entities across 
         if is_head:
             all_entities.pop(head)
-            print(head in all_entities)
             all_entities = np.array(all_entities)
             
             mask = np.isin(
@@ -133,7 +132,6 @@ class TestDataset(Dataset):
             )
         else:
             all_entities.pop(tail)
-            print(tail in all_entities)
             all_entities = np.array(all_entities)
 
             mask = np.isin(

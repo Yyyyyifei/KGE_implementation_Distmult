@@ -21,11 +21,11 @@ class DistMult(nn.Module):
         torch.nn.init.xavier_uniform_(self.entity_embeddings.weight)
         torch.nn.init.xavier_uniform_(self.relation_embeddings.weight)
 
-    def forward(self, sample):
+    def forward(self, sample, device):
         positive_samples, negative_samples = sample
         
         # true head, relation and tail
-        head_id, relation_id, tail_id = positive_samples[:, 0], positive_samples[:, 1], positive_samples[:, 2]
+        head_id, relation_id, tail_id = positive_samples[:, 0].to(device), positive_samples[:, 1].to(device), positive_samples[:, 2].to(device)
 
         # [TODO: ]should we unsqueeze the embedding?
         head_embedding = self.entity_embeddings(head_id).unsqueeze(1)
@@ -34,7 +34,7 @@ class DistMult(nn.Module):
 
         fact_score = self.score(head_embedding, relation_embedding, tail_embedding)
 
-        negative_heads, negative_tails = negative_samples["head"], negative_samples["tail"]
+        negative_heads, negative_tails = negative_samples["head"].to(device), negative_samples["tail"].to(device)
 
         # head prediction forward step
         batch_size, negative_sample_size = negative_heads.size(0), negative_heads.size(1)
